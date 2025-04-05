@@ -1,10 +1,10 @@
 """
 基于神经网络的上市公司股权质押违约预测模型
-包含数据预处理、模型训练、评估可视化和预测结果输出
+包含数据预处理、模型训练、评估可视化和结果保存
 """
 
-# 导入必要库
-# ===============================核心库===============================
+# ===============================导入必要库===============================
+import os
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -27,96 +27,54 @@ from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
+# 创建保存结果的目录
+os.makedirs("MLP", exist_ok=True)
+
 # 配置可视化样式
 plt.style.use("ggplot")
 sns.set_palette("husl")
 
 
-# 数据预处理模块
-# ===================================================================
+# ===============================数据预处理函数===============================
 def preprocess_data(df):
-    """
-    数据预处理函数
-    功能：
-    1. 处理带有千分位逗号的数值字符串
-    2. 转换空值为NaN
-    3. 统一转换为浮点型数据
-
-    参数：
-    df -- 原始数据DataFrame
-
-    返回：
-    处理后的干净DataFrame
-    """
-    # 统一转为字符串类型便于处理特殊字符
+    """处理带特殊字符的数值数据"""
     df = df.astype(str)
-
-    # 移除数值中的逗号和空格（处理千分位表示问题）
     df = df.apply(lambda x: x.str.replace(",", "").str.strip())
-
-    # 将空字符串转换为NaN（统一缺失值表示）
     df = df.replace(r"^\s*$", np.nan, regex=True)
-
-    # 转换为浮点型数据
     return df.astype(float)
 
 
-# 数据加载与预处理
-# ===================================================================
-# 读取原始数据（注意文件路径需要根据实际情况调整）
+# ===============================数据加载与预处理===============================
+# 读取训练数据
 train_df = pd.read_csv("data/train.csv", index_col="Stock code").pipe(preprocess_data)
-test_df = pd.read_csv("data/test.csv", index_col="Stock code").pipe(preprocess_data)
 
-# 特征工程
-# ===================================================================
 # 分离特征和标签
-X_train = train_df.iloc[:, :-1]  # 前60列为特征(0-59索引)
-y_train = train_df.iloc[:, -1]  # 最后一列为标签(索引60)
-X_test = test_df  # 测试集无标签
+X = train_df.iloc[:, :-1]  # 前60列为特征
+y = train_df.iloc[:, -1]  # 最后一列为标签
 
-# 缺失值处理
-# ===================================================================
-# 确定需要填补的列（根据问题描述为第52-58列，对应索引51-57）
-cols_to_impute = X_train.columns[51:58]
+# 分层分割数据集（80%训练+验证，20%最终测试）
+X_train_all, X_test, y_train_all, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42
+)
 
-# 使用训练集均值填补测试集缺失值
-for col in cols_to_impute:
-    mean_val = X_train[col].mean()
-    X_test.loc[:, col] = X_test[col].fillna(mean_val)
-
-# 特征标准化
-# ===================================================================
+# ===============================特征标准化===============================
 scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)  # 在训练集上计算均值和方差
-X_test_scaled = scaler.transform(X_test)  # 在测试集上应用相同变换
+X_train_all_scaled = scaler.fit_transform(X_train_all)
+X_test_scaled = scaler.transform(X_test)
 
-# 数据集划分
-# ===================================================================
-# 分层抽样保持类别分布
+# 进一步分割训练集为训练和验证集
 X_train_split, X_val_split, y_train_split, y_val_split = train_test_split(
-    X_train_scaled,
-    y_train,
+    X_train_all_scaled,
+    y_train_all,
     test_size=0.2,
-    stratify=y_train,  # 保持违约/正常比例
+    stratify=y_train_all,
     random_state=42,
 )
 
 
-# 模型构建
-# ===================================================================
+# ===============================模型构建===============================
 def build_model(input_dim):
-    """
-    构建神经网络模型
-    结构：
-    - 输入层：64个神经元，ReLU激活
-    - Dropout层：0.3丢弃率
-    - 隐藏层：32个神经元，ReLU激活
-    - Dropout层：0.3丢弃率
-    - 输出层：1个神经元，Sigmoid激活（二分类输出）
-
-    返回：
-    编译好的模型实例
-    """
+    """构建多层感知机模型"""
     model = Sequential(
         [
             Dense(64, activation="relu", input_shape=(input_dim,)),
@@ -127,29 +85,26 @@ def build_model(input_dim):
         ]
     )
 
-    # 配置优化器
     optimizer = Adam(learning_rate=0.001)
-
-    # 编译模型
     model.compile(
         optimizer=optimizer, loss="binary_crossentropy", metrics=["accuracy", "auc"]
     )
     return model
 
 
-model = build_model(60)  # 输入维度60个特征
+model = build_model(60)
 
-# 训练配置
-# ===================================================================
-# 早停法：当验证损失连续10轮不下降时停止训练，并恢复最佳权重
+# ===============================训练配置===============================
+# 早停法配置
 early_stop = EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True)
 
-# 类别权重：处理不平衡数据
-class_weights = compute_class_weight("balanced", classes=np.unique(y_train), y=y_train)
+# 类别权重计算（处理不平衡数据）
+class_weights = compute_class_weight(
+    "balanced", classes=np.unique(y_train_all), y=y_train_all
+)
 class_weights_dict = {0: class_weights[0], 1: class_weights[1]}
 
-# 模型训练
-# ===================================================================
+# ===============================模型训练===============================
 history = model.fit(
     X_train_split,
     y_train_split,
@@ -162,15 +117,9 @@ history = model.fit(
 )
 
 
-# 训练过程可视化
-# ===================================================================
+# ===============================训练过程可视化===============================
 def plot_training_history(history):
-    """
-    绘制训练过程指标变化曲线
-    包含：
-    - 训练集 vs 验证集的损失曲线
-    - 训练集 vs 验证集的AUC曲线
-    """
+    """绘制训练指标变化曲线"""
     plt.figure(figsize=(12, 5))
 
     # 损失曲线
@@ -199,17 +148,9 @@ def plot_training_history(history):
 plot_training_history(history)
 
 
-# 模型评估
-# ===================================================================
+# ===============================模型评估函数===============================
 def evaluate_model(model, X, y, threshold=0.5):
-    """
-    综合模型评估函数
-    输出：
-    - 准确率
-    - AUC值
-    - 混淆矩阵热力图
-    - ROC曲线
-    """
+    """执行完整模型评估流程"""
     # 预测概率
     y_pred_proba = model.predict(X)
 
@@ -217,13 +158,18 @@ def evaluate_model(model, X, y, threshold=0.5):
     acc = accuracy_score(y, (y_pred_proba > threshold).astype(int))
     auc = roc_auc_score(y, y_pred_proba)
 
-    print(f"\n评估结果:")
+    # 保存评估结果到文件
+    with open("MLP/evaluation_results.txt", "w") as f:
+        f.write(f"Accuracy: {acc:.4f}\n")
+        f.write(f"AUC: {auc:.4f}\n")
+
+    print("\n评估结果:")
     print(f"Accuracy: {acc:.4f}")
     print(f"AUC: {auc:.4f}")
 
-    # 混淆矩阵
-    cm = confusion_matrix(y, (y_pred_proba > threshold).astype(int))
+    # 绘制混淆矩阵
     plt.figure(figsize=(6, 5))
+    cm = confusion_matrix(y, (y_pred_proba > threshold).astype(int))
     sns.heatmap(
         cm,
         annot=True,
@@ -236,26 +182,28 @@ def evaluate_model(model, X, y, threshold=0.5):
     plt.savefig("MLP/confusion_matrix.png", dpi=300)
     plt.show()
 
-    # ROC曲线
+    # 绘制ROC曲线
     RocCurveDisplay.from_predictions(y, y_pred_proba)
+    plt.plot([0, 1], [0, 1], "k--")
     plt.title("ROC Curve")
-    plt.plot([0, 1], [0, 1], "k--")  # 添加对角线参考线
     plt.savefig("MLP/roc_curve.png", dpi=300)
     plt.show()
 
     return acc, auc
 
 
-# 在验证集上执行评估
-val_acc, val_auc = evaluate_model(model, X_val_split, y_val_split)
+# 在测试集上进行最终评估
+test_acc, test_auc = evaluate_model(model, X_test_scaled, y_test)
 
-# 测试集预测
-# ===================================================================
-test_pred = model.predict(X_test_scaled)
-result_df = pd.DataFrame(
-    {"Stock code": test_df.index, "DefaultProbability": test_pred.flatten()}
+# ===============================特征重要性可视化===============================
+# （可选：添加更多可视化分析）
+plt.figure(figsize=(10, 6))
+plt.bar(
+    range(len(model.layers[0].weights[0].numpy().mean(axis=1))),
+    model.layers[0].weights[0].numpy().mean(axis=1),
 )
-
-# 保存预测结果
-result_df.to_csv("MLP/predictions.csv", index=False)
-print("\n预测结果已保存至 predictions.csv")
+plt.title("Feature Importance (First Layer Weights)")
+plt.xlabel("Feature Index")
+plt.ylabel("Average Weight")
+plt.savefig("MLP/feature_importance.png", dpi=300)
+plt.show()
