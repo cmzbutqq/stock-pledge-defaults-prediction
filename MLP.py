@@ -259,6 +259,7 @@ def perform_shap_analysis(model, X_train_sample, X_test_sample, feature_names):
     1. 计算特征重要性
     2. 可视化全局特征重要性
     3. 可视化个体样本解释
+    4. 将特征重要性保存到evaluation_results.txt
     """
     print("\n正在进行SHAP分析...")
 
@@ -290,7 +291,34 @@ def perform_shap_analysis(model, X_train_sample, X_test_sample, feature_names):
         if isinstance(shap_values, list):
             shap_values = shap_values[0]  # 对于二分类问题取第一个元素
 
-        # 全局特征重要性
+        # 计算全局特征重要性(取绝对值后求平均)
+        global_shap_values = np.abs(shap_values).mean(axis=0)
+
+        # 确保feature_names和global_shap_values都是一维的
+        if len(feature_names) != len(global_shap_values):
+            raise ValueError(
+                f"特征名称数量({len(feature_names)})与SHAP值数量({len(global_shap_values)})不匹配"
+            )
+
+        # 确保global_shap_values是一维的
+        if global_shap_values.ndim > 1:
+            global_shap_values = global_shap_values.flatten()
+
+        # 创建特征重要性DataFrame
+        feature_importance = pd.DataFrame(
+            {"feature": feature_names, "importance": global_shap_values}
+        ).sort_values("importance", ascending=False)
+
+        # 将特征重要性追加到evaluation_results.txt
+        with open("MLP/evaluation_results.txt", "a") as f:
+            f.write("\n\n=== SHAP特征重要性 ===\n")
+            f.write("特征名称\t重要性得分\n")
+            for _, row in feature_importance.iterrows():
+                f.write(f"{row['feature']}\t{row['importance']:.6f}\n")
+
+        print("特征重要性已保存到evaluation_results.txt")
+
+        # 全局特征重要性可视化
         plt.figure(figsize=(10, 6))
         shap.summary_plot(
             shap_values,
