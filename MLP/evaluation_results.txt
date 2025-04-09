@@ -1,2 +1,28 @@
-Accuracy: 0.8858
-AUC: 0.9388
+Accuracy: 0.8685
+AUC: 0.9348
+
+Classification Report:
+
+Class 0.0:
+Precision: 0.9420
+Recall: 0.8941
+F1-score: 0.9174
+Support: 236.0
+
+Class 1.0:
+Precision: 0.6154
+Recall: 0.7547
+F1-score: 0.6780
+Support: 53.0
+
+Macro Avg:
+Precision: 0.7787
+Recall: 0.8244
+F1-score: 0.7977
+Support: 289.0
+
+Weighted Avg:
+Precision: 0.8821
+Recall: 0.8685
+F1-score: 0.8735
+Support: 289.0
