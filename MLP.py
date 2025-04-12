@@ -369,3 +369,55 @@ def perform_shap_analysis(model, X_train_sample, X_test_sample, feature_names):
 X_train_sample = X_train_scaled[:100]  # 背景样本
 X_test_sample = X_test_scaled[:50]  # 解释样本
 perform_shap_analysis(model, X_train_sample, X_test_sample, X.columns.tolist())
+
+
+def robustness_test(model, X_test_scaled, y_test, n_iterations=100):
+    """
+    执行稳健性检验：
+    1. 多次随机分割测试集
+    2. 计算性能指标的均值和标准差
+    """
+    print("\n正在进行稳健性检验...")
+
+    metrics = {"accuracy": [], "auc": []}
+
+    for i in range(n_iterations):
+        # 随机分割测试集（保留原始比例）
+        _, X_test_sample, _, y_test_sample = train_test_split(
+            X_test_scaled, y_test, test_size=0.5, stratify=y_test
+        )
+
+        # 评估模型
+        y_pred_proba = model.predict(X_test_sample)
+        y_pred = (y_pred_proba > 0.5).astype(int)
+
+        metrics["accuracy"].append(accuracy_score(y_test_sample, y_pred))
+        metrics["auc"].append(roc_auc_score(y_test_sample, y_pred_proba))
+
+    # 计算统计量
+    robustness_results = {
+        "mean_accuracy": np.mean(metrics["accuracy"]),
+        "std_accuracy": np.std(metrics["accuracy"]),
+        "mean_auc": np.mean(metrics["auc"]),
+        "std_auc": np.std(metrics["auc"]),
+        "n_iterations": n_iterations,
+    }
+
+    # 保存结果
+    pd.DataFrame(robustness_results, index=[0]).to_csv(
+        "MLP/robustness_test_results.csv", index=False
+    )
+
+    print(f"稳健性检验完成 (迭代次数={n_iterations})")
+    print(
+        f"准确率: {robustness_results['mean_accuracy']:.4f} ± {robustness_results['std_accuracy']:.4f}"
+    )
+    print(
+        f"AUC: {robustness_results['mean_auc']:.4f} ± {robustness_results['std_auc']:.4f}"
+    )
+
+    return robustness_results
+
+
+# 在模型评估后调用
+robustness_results = robustness_test(model, X_test_scaled, y_test)
