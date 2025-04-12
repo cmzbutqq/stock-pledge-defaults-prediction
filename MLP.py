@@ -79,11 +79,36 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
+
 # 进一步分割训练集为训练和验证集
 X_train_split, X_val_split, y_train_split, y_val_split = train_test_split(
     X_train_scaled, y_train, test_size=0.2, stratify=y_train, random_state=42
 )
+# ==========================变量描述性统计===============================
+def generate_variable_stats(df, output_file="MLP/variable_stats.csv"):
+    """
+    生成变量的描述性统计信息并保存到CSV
+    包括均值、标准差、最小值、最大值等
+    """
+    stats_df = pd.DataFrame(
+        {
+            "Mean": df.mean(),
+            "Std": df.std(),
+            "Min": df.min(),
+            "25%": df.quantile(0.25),
+            "50%": df.median(),
+            "75%": df.quantile(0.75),
+            "Max": df.max(),
+        }
+    )
+    stats_df.to_csv(output_file)
+    print(f"变量统计信息已保存到 {output_file}")
+    return stats_df
 
+
+# 在数据预处理后调用
+print("正在生成变量统计信息...")
+generate_variable_stats(X)
 
 # ===============================模型构建===============================
 def build_model(input_dim):
