@@ -167,20 +167,28 @@ history = model.fit(
 
 # ===============================训练过程可视化===============================
 def plot_training_history(history):
-    """绘制训练过程中的损失和AUC曲线"""
+    """绘制训练过程中的损失和AUC曲线，并保存结果到CSV"""
+    # 创建历史数据DataFrame
+    history_df = pd.DataFrame(history.history)
+    history_df["epoch"] = history.epoch
+
+    # 保存训练历史到CSV
+    history_df.to_csv("MLP/training_history.csv", index=False)
+
+    # 绘制图表（原有代码保持不变）
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
 
     # 损失曲线
-    ax1.plot(history.history["loss"], label="Train Loss")
-    ax1.plot(history.history["val_loss"], label="Validation Loss")
+    ax1.plot(history_df["loss"], label="Train Loss")
+    ax1.plot(history_df["val_loss"], label="Validation Loss")
     ax1.set_title("Training and Validation Loss")
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Loss")
     ax1.legend()
 
     # AUC曲线
-    ax2.plot(history.history["auc"], label="Train AUC")
-    ax2.plot(history.history["val_auc"], label="Validation AUC")
+    ax2.plot(history_df["auc"], label="Train AUC")
+    ax2.plot(history_df["val_auc"], label="Validation AUC")
     ax2.set_title("Training and Validation AUC")
     ax2.set_xlabel("Epoch")
     ax2.set_ylabel("AUC")
@@ -189,6 +197,8 @@ def plot_training_history(history):
     plt.tight_layout()
     plt.savefig("MLP/training_history.png", dpi=300)
     plt.show()
+
+    return history_df
 
 
 plot_training_history(history)
