@@ -27,6 +27,9 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.layers import BatchNormalization
+import tensorflow as tf
 
 # ===============================SHAP解释库===============================
 import shap
@@ -84,6 +87,8 @@ X_test_scaled = scaler.transform(X_test)
 X_train_split, X_val_split, y_train_split, y_val_split = train_test_split(
     X_train_scaled, y_train, test_size=0.2, stratify=y_train, random_state=42
 )
+
+
 # ==========================变量描述性统计===============================
 def generate_variable_stats(df, output_file="MLP/variable_stats.csv"):
     """
@@ -110,31 +115,39 @@ def generate_variable_stats(df, output_file="MLP/variable_stats.csv"):
 print("正在生成变量统计信息...")
 generate_variable_stats(X)
 
+
 # ===============================模型构建===============================
 def build_model(input_dim):
-    """
-    构建MLP模型架构：
-    - 输入层: 60个特征
-    - 隐藏层1: 64个神经元，ReLU激活，30% Dropout
-    - 隐藏层2: 32个神经元，ReLU激活，30% Dropout
-    - 输出层: 1个神经元，Sigmoid激活
-    - 优化器: Adam(lr=0.001)
-    - 损失函数: 二分类交叉熵
-    """
     model = Sequential(
         [
-            Dense(64, activation="relu", input_shape=(input_dim,)),
+            Dense(
+                128,
+                activation="relu",
+                input_shape=(input_dim,),
+                kernel_regularizer=l2(0.01),
+            ),
+            BatchNormalization(),
+            Dropout(0.4),
+            Dense(64, activation="relu", kernel_regularizer=l2(0.005)),
+            BatchNormalization(),
             Dropout(0.3),
-            Dense(32, activation="relu"),
-            Dropout(0.3),
+            Dense(32, activation="relu", kernel_regularizer=l2(0.001)),
+            BatchNormalization(),
+            Dropout(0.2),
             Dense(1, activation="sigmoid"),
         ]
     )
 
+    optimizer = Adam(learning_rate=0.0005)
     model.compile(
-        optimizer=Adam(learning_rate=0.001),
+        optimizer=optimizer,
         loss="binary_crossentropy",
-        metrics=["accuracy", "auc"],
+        metrics=[
+            "accuracy",
+            "auc",
+            tf.keras.metrics.Precision(name="precision"),
+            tf.keras.metrics.Recall(name="recall"),
+        ],
     )
     return model
 
@@ -150,7 +163,11 @@ class_weights_dict = {0: class_weights[0], 1: class_weights[1]}
 print(f"类别权重: {class_weights_dict}")
 
 # 早停法防止过拟合
-early_stop = EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True)
+# 改进的早停策略
+early_stop = EarlyStopping(
+    monitor="val_auc", patience=15, mode="max", restore_best_weights=True, verbose=1
+)
+
 
 print("开始训练模型...")
 history = model.fit(
