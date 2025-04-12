@@ -180,22 +180,18 @@ def evaluate_model(model, X, y, threshold=0.5):
     # 预测概率
     y_pred_proba = model.predict(X)
     y_pred = (y_pred_proba > threshold).astype(int)
-
     # 计算各项指标
     acc = accuracy_score(y, y_pred)
     auc = roc_auc_score(y, y_pred_proba)
     cm = confusion_matrix(y, y_pred)
     cr = classification_report(y, y_pred, output_dict=True)
-
     # 获取类别标签（处理不同类型的标签）
     class_labels = [str(cls) for cls in sorted(np.unique(y))]
-
     # 保存评估结果
     with open("MLP/evaluation_results.txt", "w") as f:
         f.write(f"Accuracy: {acc:.4f}\n")
         f.write(f"AUC: {auc:.4f}\n\n")
         f.write("Classification Report:\n")
-
         # 为每个类别写入指标
         for cls in class_labels:
             f.write(f"\nClass {cls}:\n")
@@ -203,27 +199,38 @@ def evaluate_model(model, X, y, threshold=0.5):
             f.write(f"Recall: {cr[cls]['recall']:.4f}\n")
             f.write(f"F1-score: {cr[cls]['f1-score']:.4f}\n")
             f.write(f"Support: {cr[cls]['support']}\n")
-
         # 写入宏观和加权平均
         f.write("\nMacro Avg:\n")
         f.write(f"Precision: {cr['macro avg']['precision']:.4f}\n")
         f.write(f"Recall: {cr['macro avg']['recall']:.4f}\n")
         f.write(f"F1-score: {cr['macro avg']['f1-score']:.4f}\n")
         f.write(f"Support: {cr['macro avg']['support']}\n")
-
         f.write("\nWeighted Avg:\n")
         f.write(f"Precision: {cr['weighted avg']['precision']:.4f}\n")
         f.write(f"Recall: {cr['weighted avg']['recall']:.4f}\n")
         f.write(f"F1-score: {cr['weighted avg']['f1-score']:.4f}\n")
         f.write(f"Support: {cr['weighted avg']['support']}\n")
-
+        # 添加混淆矩阵表格
+        f.write("\n\nConfusion Matrix:\n")
+        f.write("-----------------\n")
+        f.write("|               | Predicted 0 | Predicted 1 |\n")
+        f.write("|---------------|-------------|-------------|\n")
+        f.write(f"| Actual 0      | {cm[0,0]:^11} | {cm[0,1]:^11} |\n")
+        f.write(f"| Actual 1      | {cm[1,0]:^11} | {cm[1,1]:^11} |\n")
+        f.write("-----------------\n")
     # 打印关键指标
     print("\n评估指标:")
     print(f"Accuracy: {acc:.4f}")
     print(f"AUC: {auc:.4f}")
     print("\n分类报告:")
     print(classification_report(y, y_pred))
-
+    print("\n混淆矩阵:")
+    print("-----------------")
+    print("|               | Predicted 0 | Predicted 1 |")
+    print("|---------------|-------------|-------------|")
+    print(f"| Actual 0      | {cm[0,0]:^11} | {cm[0,1]:^11} |")
+    print(f"| Actual 1      | {cm[1,0]:^11} | {cm[1,1]:^11} |")
+    print("-----------------")
     # 绘制混淆矩阵
     plt.figure(figsize=(6, 5))
     sns.heatmap(
@@ -237,14 +244,12 @@ def evaluate_model(model, X, y, threshold=0.5):
     plt.title("Confusion Matrix")
     plt.savefig("MLP/confusion_matrix.png", dpi=300)
     plt.show()
-
     # 绘制ROC曲线
     RocCurveDisplay.from_predictions(y, y_pred_proba)
     plt.plot([0, 1], [0, 1], "k--")
     plt.title("ROC Curve")
     plt.savefig("MLP/roc_curve.png", dpi=300)
     plt.show()
-
     return acc, auc
 
 
@@ -262,9 +267,8 @@ def perform_shap_analysis(model, X_train_sample, X_test_sample, feature_names):
     4. 将特征重要性保存到evaluation_results.txt
     """
     print("\n正在进行SHAP分析...")
-
     try:
-        # 创建解释器 - 确保输入数据是numpy数组
+        # 创建解释器
         background = (
             X_train_sample
             if isinstance(X_train_sample, np.ndarray)
@@ -275,63 +279,38 @@ def perform_shap_analysis(model, X_train_sample, X_test_sample, feature_names):
             if isinstance(X_test_sample, np.ndarray)
             else np.array(X_test_sample)
         )
-
-        # 检查形状一致性
-        if background.shape[1] != test_data.shape[1]:
-            raise ValueError(
-                f"特征数量不匹配: 背景数据{background.shape[1]}个特征, 测试数据{test_data.shape[1]}个特征"
-            )
-
         explainer = shap.DeepExplainer(model, background)
-
-        # 计算SHAP值 - 确保只计算前50个样本
-        shap_values = explainer.shap_values(test_data[:50])  # 确保不超过50个样本
-
-        # SHAP值可能返回列表(多分类)或数组(二分类)
+        shap_values = explainer.shap_values(test_data[:50])
         if isinstance(shap_values, list):
-            shap_values = shap_values[0]  # 对于二分类问题取第一个元素
-
-        # 计算全局特征重要性(取绝对值后求平均)
+            shap_values = shap_values[0]
+        # 计算全局特征重要性
         global_shap_values = np.abs(shap_values).mean(axis=0)
-
-        # 确保feature_names和global_shap_values都是一维的
-        if len(feature_names) != len(global_shap_values):
-            raise ValueError(
-                f"特征名称数量({len(feature_names)})与SHAP值数量({len(global_shap_values)})不匹配"
-            )
-
-        # 确保global_shap_values是一维的
         if global_shap_values.ndim > 1:
             global_shap_values = global_shap_values.flatten()
-
         # 创建特征重要性DataFrame
         feature_importance = pd.DataFrame(
             {"feature": feature_names, "importance": global_shap_values}
         ).sort_values("importance", ascending=False)
-
         # 将特征重要性追加到evaluation_results.txt
         with open("MLP/evaluation_results.txt", "a") as f:
             f.write("\n\n=== SHAP特征重要性 ===\n")
             f.write("特征名称\t重要性得分\n")
             for _, row in feature_importance.iterrows():
                 f.write(f"{row['feature']}\t{row['importance']:.6f}\n")
-
         print("特征重要性已保存到evaluation_results.txt")
-
-        # 全局特征重要性可视化
-        plt.figure(figsize=(10, 6))
-        shap.summary_plot(
-            shap_values,
-            test_data[:50],
-            feature_names=feature_names,
-            plot_type="bar",
-            show=False,
+        # 自定义SHAP重要性柱状图
+        plt.figure(figsize=(12, 8))
+        top_features = feature_importance.head(20)  # 只显示最重要的20个特征
+        plt.barh(
+            top_features["feature"][::-1],
+            top_features["importance"][::-1],
+            color="#1f77b4",
         )
-        plt.title("Global Feature Importance (SHAP)")
+        plt.xlabel("SHAP Value (mean absolute impact on model output)")
+        plt.title("Top 20 Feature Importance (SHAP)")
         plt.tight_layout()
-        plt.savefig("MLP/shap_global_importance.png", dpi=300)
+        plt.savefig("MLP/shap_feature_importance.png", dpi=300)
         plt.show()
-
         # 个体样本解释
         plt.figure(figsize=(10, 6))
         shap.summary_plot(
@@ -341,11 +320,9 @@ def perform_shap_analysis(model, X_train_sample, X_test_sample, feature_names):
         plt.tight_layout()
         plt.savefig("MLP/shap_summary_plot.png", dpi=300)
         plt.show()
-
         # 保存SHAP值
         np.save("MLP/shap_values.npy", shap_values)
         print("SHAP分析完成!")
-
     except Exception as e:
         print(f"SHAP分析出错: {str(e)}")
         import traceback
