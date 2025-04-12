@@ -314,7 +314,7 @@ def perform_shap_analysis(model, X_train_sample, X_test_sample, feature_names):
     """
     执行SHAP分析：
     1. 计算特征重要性
-    2. 可视化全局特征重要性
+    2. 可视化全局特征重要性（自动处理长特征名）
     3. 可视化个体样本解释
     4. 将特征重要性保存到evaluation_results.txt
     """
@@ -335,34 +335,48 @@ def perform_shap_analysis(model, X_train_sample, X_test_sample, feature_names):
         shap_values = explainer.shap_values(test_data[:50])
         if isinstance(shap_values, list):
             shap_values = shap_values[0]
+
         # 计算全局特征重要性
         global_shap_values = np.abs(shap_values).mean(axis=0)
         if global_shap_values.ndim > 1:
             global_shap_values = global_shap_values.flatten()
+
         # 创建特征重要性DataFrame
         feature_importance = pd.DataFrame(
             {"feature": feature_names, "importance": global_shap_values}
         ).sort_values("importance", ascending=False)
-        # 将特征重要性追加到evaluation_results.txt
+
+        # 保存特征重要性
         with open("MLP/evaluation_results.txt", "a") as f:
             f.write("\n\n=== SHAP特征重要性 ===\n")
             f.write("特征名称\t重要性得分\n")
             for _, row in feature_importance.iterrows():
                 f.write(f"{row['feature']}\t{row['importance']:.6f}\n")
         print("特征重要性已保存到evaluation_results.txt")
-        # 自定义SHAP重要性柱状图
+
+        # 自定义SHAP重要性柱状图（处理长特征名）
         plt.figure(figsize=(12, 8))
-        top_features = feature_importance.head(20)  # 只显示最重要的20个特征
-        plt.barh(
-            top_features["feature"][::-1],
-            top_features["importance"][::-1],
-            color="#1f77b4",
-        )
+        top_features = feature_importance.head(20)
+
+        # 方法1：截断长名称
+        truncated_names = [
+            name[:30] + "..." if len(name) > 30 else name
+            for name in top_features["feature"][::-1]
+        ]
+
+        # 方法2：自动换行（任选一种）
+        # import textwrap
+        # truncated_names = ['\n'.join(textwrap.wrap(name, width=25))
+        #                  for name in top_features["feature"][::-1]]
+
+        plt.barh(truncated_names, top_features["importance"][::-1], color="#1f77b4")
         plt.xlabel("SHAP Value (mean absolute impact on model output)")
         plt.title("Top 20 Feature Importance (SHAP)")
+        plt.subplots_adjust(left=0.3)  # 调整左边距
         plt.tight_layout()
         plt.savefig("MLP/shap_feature_importance.png", dpi=300)
         plt.show()
+
         # 个体样本解释
         plt.figure(figsize=(10, 6))
         shap.summary_plot(
@@ -372,9 +386,11 @@ def perform_shap_analysis(model, X_train_sample, X_test_sample, feature_names):
         plt.tight_layout()
         plt.savefig("MLP/shap_summary_plot.png", dpi=300)
         plt.show()
+
         # 保存SHAP值
         np.save("MLP/shap_values.npy", shap_values)
         print("SHAP分析完成!")
+
     except Exception as e:
         print(f"SHAP分析出错: {str(e)}")
         import traceback

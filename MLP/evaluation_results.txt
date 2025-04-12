@@ -1,30 +1,30 @@
-Accuracy: 0.8616
-AUC: 0.9256
+Accuracy: 0.8547
+AUC: 0.9218
 
 Classification Report:
 
 Class 0.0:
-Precision: 0.9455
-Recall: 0.8814
-F1-score: 0.9123
+Precision: 0.9330
+Recall: 0.8856
+F1-score: 0.9087
 Support: 236.0
 
 Class 1.0:
-Precision: 0.5942
-Recall: 0.7736
-F1-score: 0.6721
+Precision: 0.5846
+Recall: 0.7170
+F1-score: 0.6441
 Support: 53.0
 
 Macro Avg:
-Precision: 0.7698
-Recall: 0.8275
-F1-score: 0.7922
+Precision: 0.7588
+Recall: 0.8013
+F1-score: 0.7764
 Support: 289.0
 
 Weighted Avg:
-Precision: 0.8810
-Recall: 0.8616
-F1-score: 0.8682
+Precision: 0.8691
+Recall: 0.8547
+F1-score: 0.8602
 Support: 289.0
 
 
@@ -32,70 +32,70 @@ Confusion Matrix:
 -----------------
 |               | Predicted 0 | Predicted 1 |
 |---------------|-------------|-------------|
-| Actual 0      |     208     |     28      |
-| Actual 1      |     12      |     41      |
+| Actual 0      |     209     |     27      |
+| Actual 1      |     15      |     38      |
 -----------------
 
 
 === SHAP特征重要性 ===
 特征名称	重要性得分
-Share pledge ratio of controlling shareholders	0.103171
-Pledge ratio of unlimited shares	0.045812
-Financial cycle m2/gdp	0.036453
-Stock price rise and fall in the last year	0.030410
-audit opinion 	0.027259
-Pledge ratio of limited sale shares	0.025480
-Downgrade or negative	0.022888
-Tobin Q	0.021345
-Number of research institutions concerned	0.020115
-Debt financing costs	0.018726
-Two positions in one (1 for the same, 0 for the different)	0.017553
-Net cash flow from operations has been negative for three consecutive years	0.017053
-Asset quality index	0.016255
-Asset liability ratio (total liabilities - contract liabilities - advance receipts)/(total assets - goodwill - contract liabilities - advance receipts)	0.014621
-Annual turnover rate	0.014237
-ROA	0.014033
-Ratio of other receivables to total assets	0.013620
-The proportion of goodwill in total assets exceeds	0.013293
-Minority shareholders' equity/owners' equity	0.013113
-Company size (LN)	0.012489
-Monetary capital/short-term debt	0.011333
-Total asset turnover rate (Times)	0.010317
-ROE	0.009794
-Total institutional shareholding ratio	0.009708
-Enterprise age	0.009640
-Number of research reports (+1 LN)	0.009539
-Number of key audit matters	0.009063
-P/E ratio	0.008994
-Ratio of accounts receivable to operating income	0.008879
-Current liabilities/total liabilities	0.008847
-Equity checks and balances (2-5 large/1 large)	0.008830
-Stock Volatility	0.008622
-Current ratio	0.008125
-Asset liability ratio (excluding advance receipts)	0.007437
-Asset liability ratio	0.006858
-Equity concentration (the first largest shareholder)	0.006787
-Cash income ratio	0.006440
-Ratio of prepayments to operating income	0.006087
-Average cash income ratio in recent three years	0.006004
-Proportion of independent directors	0.005989
-Gross profit margin on sales	0.005870
-Ratio of construction in progress to total assets	0.005734
-Company nature (state owned assets 0, others 1)	0.005691
-Z-SCORE	0.005219
-Cash ratio	0.003532
-Audit fee	0.003398
-SG&A Expense	0.003275
-Goodwill impairment ratio	0.003156
-Net business cycle (days)	0.002833
-ST	0.002662
-Inventory turnover rate (Times)	0.002262
-changes in operating income	0.001910
-Whether there are four major audits	0.001801
-changes in net assets	0.001578
-EBITDA/interest bearing debt	0.000777
-EBITDA interest cover	0.000742
-P/B ratio	0.000432
-Turnover rate of accounts receivable (Times)	0.000348
-EBIT interest cover	0.000168
+Share pledge ratio of controlling shareholders	0.068796
+Pledge ratio of unlimited shares	0.038220
+Stock price rise and fall in the last year	0.026327
+The proportion of goodwill in total assets exceeds	0.025707
+audit opinion 	0.024176
+Downgrade or negative	0.023367
+Debt financing costs	0.019606
+Number of research reports (+1 LN)	0.019268
+Two positions in one (1 for the same, 0 for the different)	0.018255
+Number of research institutions concerned	0.016768
+Net cash flow from operations has been negative for three consecutive years	0.015832
+Ratio of other receivables to total assets	0.015590
+Number of key audit matters	0.014440
+Company size (LN)	0.012932
+Minority shareholders' equity/owners' equity	0.012523
+Stock Volatility	0.011624
+Tobin Q	0.011440
+Pledge ratio of limited sale shares	0.011040
+Total institutional shareholding ratio	0.010247
+Enterprise age	0.010017
+Annual turnover rate	0.008739
+Equity concentration (the first largest shareholder)	0.008273
+Gross profit margin on sales	0.008019
+Asset liability ratio	0.007986
+Proportion of independent directors	0.007318
+Ratio of construction in progress to total assets	0.006524
+Current liabilities/total liabilities	0.006420
+Monetary capital/short-term debt	0.006403
+Average cash income ratio in recent three years	0.006188
+Financial cycle m2/gdp	0.006044
+Cash ratio	0.005861
+Asset liability ratio (excluding advance receipts)	0.005820
+Total asset turnover rate (Times)	0.005726
+P/E ratio	0.005625
+Ratio of prepayments to operating income	0.005524
+Z-SCORE	0.005495
+Company nature (state owned assets 0, others 1)	0.005249
+Asset liability ratio (total liabilities - contract liabilities - advance receipts)/(total assets - goodwill - contract liabilities - advance receipts)	0.005101
+ROE	0.005026
+ROA	0.004929
+Equity checks and balances (2-5 large/1 large)	0.004852
+Asset quality index	0.004831
+Ratio of accounts receivable to operating income	0.003746
+Audit fee	0.003743
+changes in operating income	0.003242
+Cash income ratio	0.003144
+Inventory turnover rate (Times)	0.002672
+changes in net assets	0.002655
+Goodwill impairment ratio	0.002348
+Current ratio	0.002003
+ST	0.001531
+SG&A Expense	0.001378
+EBITDA/interest bearing debt	0.001179
+Net business cycle (days)	0.001056
+Whether there are four major audits	0.000930
+P/B ratio	0.000667
+EBIT interest cover	0.000427
+EBITDA interest cover	0.000262
+Turnover rate of accounts receivable (Times)	0.000225
 High deposit and loan of 90p	0.000000
