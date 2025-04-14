@@ -1,0 +1,62 @@
+Variable,Coefficient
+Instrument,-0.05858716228228211
+Z-SCORE,0.009725084206847225
+Share pledge ratio of controlling shareholders,-0.0005697650866354174
+Pledge ratio of limited sale shares,0.07568848353646572
+Pledge ratio of unlimited shares,0.1016897211960361
+Stock Volatility,0.004865109489245328
+P/E ratio,-0.023159791699050074
+P/B ratio,-0.06742468203568266
+Stock price rise and fall in the last year,-0.038966524197412346
+Annual turnover rate,-0.011061727956897392
+ST,0.0004175414914638423
+ROA,-0.007621571246739286
+ROE,-0.0077435138842806076
+changes in net assets,0.013207302589242517
+changes in operating income,0.014930008570846726
+Gross profit margin on sales,0.005254727432710472
+Net business cycle (days),-0.0010870603487821914
+Turnover rate of accounts receivable (Times),0.0017442645227275407
+Inventory turnover rate (Times),0.011880470987585521
+Total asset turnover rate (Times),-0.008439981870482671
+Current ratio,0.03328363550619387
+Cash ratio,-0.004782375204796229
+Asset liability ratio,-0.011916509927344582
+Asset liability ratio (excluding advance receipts),-0.05849532823699491
+Asset liability ratio (total liabilities - contract liabilities - advance receipts)/(total assets - goodwill - contract liabilities - advance receipts),0.07528165490153729
+Current liabilities/total liabilities,0.01098820217691869
+Monetary capital/short-term debt,0.014008197532945129
+EBITDA/interest bearing debt,-0.00411094744321135
+EBIT interest cover,0.019670620329024738
+EBITDA interest cover,-0.022790692992773955
+Net cash flow from operations has been negative for three consecutive years,0.028874696216753627
+Average cash income ratio in recent three years,0.012894697223304333
+Cash income ratio,-0.040796020696008226
+Ratio of accounts receivable to operating income,-0.0005380340114000317
+Ratio of prepayments to operating income,0.06419609368393343
+Ratio of other receivables to total assets,0.0346291649308997
+Ratio of construction in progress to total assets,0.0007760490733961056
+Minority shareholders' equity/owners' equity,-0.0001929933394743434
+The proportion of goodwill in total assets exceeds,0.03220878053233485
+Downgrade or negative,0.0759928839039887
+audit opinion ,0.0452447937765904
+"Company nature (state owned assets 0, others 1)",0.015199703187265847
+High deposit and loan of 90p,-0.008160285164136086
+Company size (LN),0.04229519723836354
+Whether there are four major audits,0.005912018169316769
+Proportion of independent directors,-0.0005212238312198372
+Equity checks and balances (2-5 large/1 large),-0.02171046956746888
+"Two positions in one (1 for the same, 0 for the different)",-0.011527590873993555
+Equity concentration (the first largest shareholder),-0.03381836275369472
+Total institutional shareholding ratio,0.0070300833275710566
+Audit fee,0.012973408260608877
+Tobin Q,0.04316870287268846
+Debt financing costs,0.048182081689294345
+Enterprise age,0.011052205182086435
+Goodwill impairment ratio,-0.023656626901253114
+Asset quality index,-0.00013124292479821387
+SG&A Expense,0.010617593961380725
+Number of key audit matters,-0.03856208403190258
+Number of research institutions concerned,-0.020268963020367244
+Number of research reports (+1 LN),-0.0409458895879221
+Financial cycle m2/gdp,0.045508171864801286
