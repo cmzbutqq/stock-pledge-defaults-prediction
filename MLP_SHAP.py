@@ -1,6 +1,6 @@
 """
 基于多层感知机(MLP)的上市公司股权质押违约预测模型
-包含数据预处理、模型训练、评估可视化、SHAP解释和结果保存
+包含数据预处理、模型训练、评估可视化、SHAP解释、内生性检验和结果保存
 """
 
 # ===============================导入核心库===============================
@@ -33,6 +33,12 @@ import tensorflow as tf
 
 # ===============================SHAP解释库===============================
 import shap
+
+# ===============================内生性检验库===============================
+from scipy import stats
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from statsmodels.regression.linear_model import OLS
+from statsmodels.tools.tools import add_constant
 
 shap.initjs()
 
@@ -454,3 +460,78 @@ def robustness_test(model, X_test_scaled, y_test, n_iterations=100):
 
 # 在模型评估后调用
 robustness_results = robustness_test(model, X_test_scaled, y_test)
+
+
+# ===============================内生性检验===============================
+def perform_endogeneity_tests(X, y, feature_names, output_dir="MLP"):
+    """
+    执行内生性检验：
+    1. 多重共线性检验 (VIF)
+    2. 保存检验结果
+    """
+    print("\n正在进行内生性检验...")
+
+    # 创建结果目录
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 添加常数项
+    X_with_const = add_constant(X)
+
+    # 1. 多重共线性检验 (VIF)
+    vif_data = pd.DataFrame()
+    vif_data["Variable"] = ["const"] + feature_names
+    vif_data["VIF"] = [
+        variance_inflation_factor(X_with_const, i) for i in range(X_with_const.shape[1])
+    ]
+
+    # 保存VIF结果
+    vif_data.to_csv(f"{output_dir}/vif_results.csv", index=False)
+
+    # 绘制VIF柱状图
+    plt.figure(figsize=(12, 8))
+
+    # 处理长变量名，类似于SHAP特征重要性图表
+    truncated_names = [
+        name[:30] + "..." if len(name) > 30 else name for name in vif_data["Variable"]
+    ]
+
+    sns.barplot(x="VIF", y=truncated_names, data=vif_data)
+    plt.title("Variance Inflation Factors")
+    plt.axvline(x=5, color="r", linestyle="--", label="VIF=5(Threshold)")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/vif_plot.png", dpi=300)
+    plt.show()
+
+    # 保存内生性检验报告
+    with open(f"{output_dir}/endogeneity_test_report.txt", "w") as f:
+        f.write("=== 内生性检验报告 ===\n\n")
+
+        f.write("1. 多重共线性检验 (VIF)\n")
+        f.write("-------------------\n")
+        f.write("VIF > 5 表示存在严重的多重共线性问题\n\n")
+        for _, row in vif_data.iterrows():
+            f.write(f"{row['Variable']}: {row['VIF']:.4f}\n")
+
+        f.write("\n2. 综合结论\n")
+        f.write("-------------------\n")
+        f.write("根据VIF检验结果，以下变量可能存在多重共线性问题：\n")
+        high_vif_vars = vif_data[vif_data["VIF"] > 5]["Variable"].tolist()
+        if high_vif_vars:
+            for var in high_vif_vars:
+                f.write(
+                    f"- {var} (VIF: {vif_data[vif_data['Variable'] == var]['VIF'].values[0]:.4f})\n"
+                )
+        else:
+            f.write("未发现明显的多重共线性问题。\n")
+
+    print(f"内生性检验完成，结果已保存到 {output_dir}/endogeneity_test_report.txt")
+
+    return {"vif_results": vif_data}
+
+
+# 在模型评估后调用内生性检验
+print("\n执行内生性检验...")
+endogeneity_results = perform_endogeneity_tests(
+    X_train_scaled, y_train, X.columns.tolist()
+)

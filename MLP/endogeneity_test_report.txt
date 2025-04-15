@@ -1,0 +1,82 @@
+=== 内生性检验报告 ===
+
+1. 多重共线性检验 (VIF)
+-------------------
+VIF > 5 表示存在严重的多重共线性问题
+
+const: 1.0000
+Z-SCORE: 3.6198
+Share pledge ratio of controlling shareholders: 2.2390
+Pledge ratio of limited sale shares: 1.3981
+Pledge ratio of unlimited shares: 2.1655
+Stock Volatility: 2.1503
+P/E ratio: 1.1671
+P/B ratio: 5.6849
+Stock price rise and fall in the last year: 2.0339
+Annual turnover rate: 1.6747
+ST: 1.1918
+ROA: 3.0267
+ROE: 2.3638
+changes in net assets: 1.9958
+changes in operating income: 1.1956
+Gross profit margin on sales: 1.9212
+Net business cycle (days): 1.2836
+Turnover rate of accounts receivable (Times): 1.0466
+Inventory turnover rate (Times): 1.1147
+Total asset turnover rate (Times): 1.3551
+Current ratio: 5.9646
+Cash ratio: 6.7784
+Asset liability ratio: 51.7096
+Asset liability ratio (excluding advance receipts): 89.1519
+Asset liability ratio (total liabilities - contract liabilities - advance receipts)/(total assets - goodwill - contract liabilities - advance receipts): 42.9771
+Current liabilities/total liabilities: 1.4526
+Monetary capital/short-term debt: 1.5161
+EBITDA/interest bearing debt: 1.0398
+EBIT interest cover: 84.8559
+EBITDA interest cover: 84.8480
+Net cash flow from operations has been negative for three consecutive years: 1.0933
+Average cash income ratio in recent three years: 3.3661
+Cash income ratio: 3.6310
+Ratio of accounts receivable to operating income: 1.6719
+Ratio of prepayments to operating income: 6.3665
+Ratio of other receivables to total assets: 1.2433
+Ratio of construction in progress to total assets: 1.2108
+Minority shareholders' equity/owners' equity: 1.2399
+The proportion of goodwill in total assets exceeds: 3.8523
+Downgrade or negative: 1.1411
+audit opinion : 1.5510
+Company nature (state owned assets 0, others 1): 1.2150
+High deposit and loan of 90p: 1.0440
+Company size (LN): 3.5733
+Whether there are four major audits: 1.3015
+Proportion of independent directors: 1.1226
+Equity checks and balances (2-5 large/1 large): 2.5590
+Two positions in one (1 for the same, 0 for the different): 1.1663
+Equity concentration (the first largest shareholder): 2.9615
+Total institutional shareholding ratio: 1.8228
+Audit fee: 1.7441
+Tobin Q: 2.1033
+Debt financing costs: 1.6107
+Enterprise age: 1.4788
+Goodwill impairment ratio: 2.0679
+Asset quality index: 1.1204
+SG&A Expense: 1.4726
+Number of key audit matters: 1.9168
+Number of research institutions concerned: 37.9913
+Number of research reports (+1 LN): 37.6377
+Financial cycle m2/gdp: 1.9093
+
+2. 综合结论
+-------------------
+根据VIF检验结果，以下变量可能存在多重共线性问题：
+- P/B ratio (VIF: 5.6849)
+- Current ratio (VIF: 5.9646)
+- Cash ratio (VIF: 6.7784)
+- Asset liability ratio (VIF: 51.7096)
+- Asset liability ratio (excluding advance receipts) (VIF: 89.1519)
+- Asset liability ratio (total liabilities - contract liabilities - advance receipts)/(total assets - goodwill - contract liabilities - advance receipts) (VIF: 42.9771)
+- EBIT interest cover (VIF: 84.8559)
+- EBITDA interest cover (VIF: 84.8480)
+- Ratio of prepayments to operating income (VIF: 6.3665)
+- Number of research institutions concerned (VIF: 37.9913)
+- Number of research reports (+1 LN) (VIF: 37.6377)
