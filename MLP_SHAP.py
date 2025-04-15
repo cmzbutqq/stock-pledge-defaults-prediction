@@ -412,50 +412,276 @@ perform_shap_analysis(model, X_train_sample, X_test_sample, X.columns.tolist())
 
 def robustness_test(model, X_test_scaled, y_test, n_iterations=100):
     """
-    执行稳健性检验：
-    1. 多次随机分割测试集
-    2. 计算性能指标的均值和标准差
+    执行多维度稳健性检验：
+    1. 随机分割测试集
+    2. 添加随机噪声
+    3. 模拟特征缺失
+    4. 模拟异常值
+    5. 计算性能指标的均值和标准差
     """
-    print("\n正在进行稳健性检验...")
+    print("\n正在进行多维度稳健性检验...")
 
-    metrics = {"accuracy": [], "auc": []}
-
-    for i in range(n_iterations):
-        # 随机分割测试集（保留原始比例）
-        _, X_test_sample, _, y_test_sample = train_test_split(
-            X_test_scaled, y_test, test_size=0.5, stratify=y_test
-        )
-
-        # 评估模型
-        y_pred_proba = model.predict(X_test_sample)
-        y_pred = (y_pred_proba > 0.5).astype(int)
-
-        metrics["accuracy"].append(accuracy_score(y_test_sample, y_pred))
-        metrics["auc"].append(roc_auc_score(y_test_sample, y_pred_proba))
-
-    # 计算统计量
-    robustness_results = {
-        "mean_accuracy": np.mean(metrics["accuracy"]),
-        "std_accuracy": np.std(metrics["accuracy"]),
-        "mean_auc": np.mean(metrics["auc"]),
-        "std_auc": np.std(metrics["auc"]),
-        "n_iterations": n_iterations,
+    # 初始化结果字典
+    metrics = {
+        "original": {"accuracy": [], "auc": []},
+        "noise": {"accuracy": [], "auc": []},
+        "missing": {"accuracy": [], "auc": []},
+        "outliers": {"accuracy": [], "auc": []},
     }
 
-    # 保存结果
-    pd.DataFrame(robustness_results, index=[0]).to_csv(
-        "MLP/robustness_test_results.csv", index=False
-    )
+    # 确保数据是numpy数组
+    X_test_scaled = np.array(X_test_scaled)
+    y_test = np.array(y_test)
 
-    print(f"稳健性检验完成 (迭代次数={n_iterations})")
-    print(
-        f"准确率: {robustness_results['mean_accuracy']:.4f} ± {robustness_results['std_accuracy']:.4f}"
-    )
-    print(
-        f"AUC: {robustness_results['mean_auc']:.4f} ± {robustness_results['std_auc']:.4f}"
-    )
+    # 获取特征数量
+    n_features = X_test_scaled.shape[1]
 
-    return robustness_results
+    try:
+        for i in range(n_iterations):
+            # 1. 原始数据测试（随机分割）
+            _, X_test_sample, _, y_test_sample = train_test_split(
+                X_test_scaled, y_test, test_size=0.5, stratify=y_test, random_state=i
+            )
+
+            # 评估原始数据
+            y_pred_proba = model.predict(X_test_sample, verbose=0)
+            y_pred = (y_pred_proba > 0.5).astype(int)
+
+            metrics["original"]["accuracy"].append(
+                accuracy_score(y_test_sample, y_pred)
+            )
+            metrics["original"]["auc"].append(
+                roc_auc_score(y_test_sample, y_pred_proba)
+            )
+
+            # 2. 添加随机噪声测试
+            noise_level = 0.05  # 5%的噪声水平
+            X_noise = X_test_sample.copy()
+            noise = np.random.normal(0, noise_level, X_noise.shape)
+            X_noise = X_noise + noise
+
+            # 评估带噪声数据
+            y_pred_proba_noise = model.predict(X_noise, verbose=0)
+            y_pred_noise = (y_pred_proba_noise > 0.5).astype(int)
+
+            metrics["noise"]["accuracy"].append(
+                accuracy_score(y_test_sample, y_pred_noise)
+            )
+            metrics["noise"]["auc"].append(
+                roc_auc_score(y_test_sample, y_pred_proba_noise)
+            )
+
+            # 3. 模拟特征缺失测试
+            missing_ratio = 0.1  # 10%的特征缺失
+            n_missing_features = int(n_features * missing_ratio)
+            missing_indices = np.random.choice(
+                n_features, n_missing_features, replace=False
+            )
+
+            X_missing = X_test_sample.copy()
+            X_missing[:, missing_indices] = 0  # 将缺失特征设为0
+
+            # 评估特征缺失数据
+            y_pred_proba_missing = model.predict(X_missing, verbose=0)
+            y_pred_missing = (y_pred_proba_missing > 0.5).astype(int)
+
+            metrics["missing"]["accuracy"].append(
+                accuracy_score(y_test_sample, y_pred_missing)
+            )
+            metrics["missing"]["auc"].append(
+                roc_auc_score(y_test_sample, y_pred_proba_missing)
+            )
+
+            # 4. 模拟异常值测试
+            outlier_ratio = 0.05  # 5%的样本包含异常值
+            n_outlier_samples = int(X_test_sample.shape[0] * outlier_ratio)
+            outlier_indices = np.random.choice(
+                X_test_sample.shape[0], n_outlier_samples, replace=False
+            )
+
+            X_outliers = X_test_sample.copy()
+            for idx in outlier_indices:
+                # 随机选择特征并添加异常值
+                feature_idx = np.random.randint(0, n_features)
+                X_outliers[idx, feature_idx] = (
+                    X_outliers[idx, feature_idx] * 10
+                )  # 放大10倍
+
+            # 评估异常值数据
+            y_pred_proba_outliers = model.predict(X_outliers, verbose=0)
+            y_pred_outliers = (y_pred_proba_outliers > 0.5).astype(int)
+
+            metrics["outliers"]["accuracy"].append(
+                accuracy_score(y_test_sample, y_pred_outliers)
+            )
+            metrics["outliers"]["auc"].append(
+                roc_auc_score(y_test_sample, y_pred_proba_outliers)
+            )
+
+            # 打印进度
+            if (i + 1) % 10 == 0:
+                print(f"完成 {i+1}/{n_iterations} 次迭代")
+
+        # 计算统计量
+        robustness_results = {
+            "original": {
+                "mean_accuracy": np.mean(metrics["original"]["accuracy"]),
+                "std_accuracy": np.std(metrics["original"]["accuracy"]),
+                "mean_auc": np.mean(metrics["original"]["auc"]),
+                "std_auc": np.std(metrics["original"]["auc"]),
+            },
+            "noise": {
+                "mean_accuracy": np.mean(metrics["noise"]["accuracy"]),
+                "std_accuracy": np.std(metrics["noise"]["accuracy"]),
+                "mean_auc": np.mean(metrics["noise"]["auc"]),
+                "std_auc": np.std(metrics["noise"]["auc"]),
+            },
+            "missing": {
+                "mean_accuracy": np.mean(metrics["missing"]["accuracy"]),
+                "std_accuracy": np.std(metrics["missing"]["accuracy"]),
+                "mean_auc": np.mean(metrics["missing"]["auc"]),
+                "std_auc": np.std(metrics["missing"]["auc"]),
+            },
+            "outliers": {
+                "mean_accuracy": np.mean(metrics["outliers"]["accuracy"]),
+                "std_accuracy": np.std(metrics["outliers"]["accuracy"]),
+                "mean_auc": np.mean(metrics["outliers"]["auc"]),
+                "std_auc": np.std(metrics["outliers"]["auc"]),
+            },
+            "n_iterations": n_iterations,
+        }
+
+        # 保存结果
+        results_df = pd.DataFrame(
+            {
+                "Test Type": ["Original", "Noise", "Missing", "Outliers"],
+                "Mean Accuracy": [
+                    robustness_results["original"]["mean_accuracy"],
+                    robustness_results["noise"]["mean_accuracy"],
+                    robustness_results["missing"]["mean_accuracy"],
+                    robustness_results["outliers"]["mean_accuracy"],
+                ],
+                "Std Accuracy": [
+                    robustness_results["original"]["std_accuracy"],
+                    robustness_results["noise"]["std_accuracy"],
+                    robustness_results["missing"]["std_accuracy"],
+                    robustness_results["outliers"]["std_accuracy"],
+                ],
+                "Mean AUC": [
+                    robustness_results["original"]["mean_auc"],
+                    robustness_results["noise"]["mean_auc"],
+                    robustness_results["missing"]["mean_auc"],
+                    robustness_results["outliers"]["mean_auc"],
+                ],
+                "Std AUC": [
+                    robustness_results["original"]["std_auc"],
+                    robustness_results["noise"]["std_auc"],
+                    robustness_results["missing"]["std_auc"],
+                    robustness_results["outliers"]["std_auc"],
+                ],
+            }
+        )
+
+        results_df.to_csv("MLP/robustness_test_results.csv", index=False)
+
+        # 绘制稳健性检验结果
+        plt.figure(figsize=(12, 8))
+
+        # 准确率比较
+        plt.subplot(2, 1, 1)
+        test_types = ["Original", "Noise", "Missing", "Outliers"]
+        accuracies = [
+            robustness_results["original"]["mean_accuracy"],
+            robustness_results["noise"]["mean_accuracy"],
+            robustness_results["missing"]["mean_accuracy"],
+            robustness_results["outliers"]["mean_accuracy"],
+        ]
+        acc_stds = [
+            robustness_results["original"]["std_accuracy"],
+            robustness_results["noise"]["std_accuracy"],
+            robustness_results["missing"]["std_accuracy"],
+            robustness_results["outliers"]["std_accuracy"],
+        ]
+
+        plt.bar(test_types, accuracies, yerr=acc_stds, capsize=5, color="skyblue")
+        plt.title("Accuracy Comparison Across Different\nData Perturbations")
+        plt.ylabel("Accuracy")
+        plt.grid(axis="y", linestyle="--", alpha=0.7)
+
+        # AUC比较
+        plt.subplot(2, 1, 2)
+        aucs = [
+            robustness_results["original"]["mean_auc"],
+            robustness_results["noise"]["mean_auc"],
+            robustness_results["missing"]["mean_auc"],
+            robustness_results["outliers"]["mean_auc"],
+        ]
+        auc_stds = [
+            robustness_results["original"]["std_auc"],
+            robustness_results["noise"]["std_auc"],
+            robustness_results["missing"]["std_auc"],
+            robustness_results["outliers"]["std_auc"],
+        ]
+
+        plt.bar(test_types, aucs, yerr=auc_stds, capsize=5, color="lightgreen")
+        plt.title("AUC Comparison Across Different\nData Perturbations")
+        plt.ylabel("AUC")
+        plt.grid(axis="y", linestyle="--", alpha=0.7)
+
+        plt.tight_layout()
+        plt.savefig("MLP/robustness_test_results.png", dpi=300)
+        plt.show()
+
+        # 打印结果
+        print(f"稳健性检验完成 (迭代次数={n_iterations})")
+        print("\n原始数据:")
+        print(
+            f"准确率: {robustness_results['original']['mean_accuracy']:.4f} ± "
+            f"{robustness_results['original']['std_accuracy']:.4f}"
+        )
+        print(
+            f"AUC: {robustness_results['original']['mean_auc']:.4f} ± "
+            f"{robustness_results['original']['std_auc']:.4f}"
+        )
+
+        print("\n添加噪声数据:")
+        print(
+            f"准确率: {robustness_results['noise']['mean_accuracy']:.4f} ± "
+            f"{robustness_results['noise']['std_accuracy']:.4f}"
+        )
+        print(
+            f"AUC: {robustness_results['noise']['mean_auc']:.4f} ± "
+            f"{robustness_results['noise']['std_auc']:.4f}"
+        )
+
+        print("\n特征缺失数据:")
+        print(
+            f"准确率: {robustness_results['missing']['mean_accuracy']:.4f} ± "
+            f"{robustness_results['missing']['std_accuracy']:.4f}"
+        )
+        print(
+            f"AUC: {robustness_results['missing']['mean_auc']:.4f} ± "
+            f"{robustness_results['missing']['std_auc']:.4f}"
+        )
+
+        print("\n异常值数据:")
+        print(
+            f"准确率: {robustness_results['outliers']['mean_accuracy']:.4f} ± "
+            f"{robustness_results['outliers']['std_accuracy']:.4f}"
+        )
+        print(
+            f"AUC: {robustness_results['outliers']['mean_auc']:.4f} ± "
+            f"{robustness_results['outliers']['std_auc']:.4f}"
+        )
+
+        return robustness_results
+
+    except Exception as e:
+        print(f"稳健性检验过程中出现错误: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
+        return None
 
 
 # 在模型评估后调用
